@@ -9,8 +9,9 @@
 #import "BNRDrawView.h"
 #import "BNRLine.h"
 
-@interface BNRDrawView ()
+@interface BNRDrawView () <UIGestureRecognizerDelegate>
 
+@property (nonatomic, strong) UIPanGestureRecognizer *moveRecognizer;
 //@property (nonatomic, strong) BNRLine *currentLine;
 @property (nonatomic, strong) NSMutableDictionary *linesInProgress;
 @property (nonatomic, strong) NSMutableArray *finishedLines;
@@ -46,6 +47,11 @@
         UILongPressGestureRecognizer *pressRecognizer =
         [[UILongPressGestureRecognizer alloc] initWithTarget:self action:@selector(longPress:)];
         [self addGestureRecognizer:pressRecognizer];
+        
+        self.moveRecognizer = [[UIPanGestureRecognizer alloc] initWithTarget:self action:@selector(moveLine:)];
+        self.moveRecognizer.delegate = self;
+        self.moveRecognizer.cancelsTouchesInView = NO;
+        [self addGestureRecognizer:self.moveRecognizer];
     }
     
     return self;
@@ -260,4 +266,44 @@
     }
     [self setNeedsDisplay];
 }
+
+- (BOOL)gestureRecognizer:(UIGestureRecognizer *)gestureRecognizer shouldRecognizeSimultaneouslyWithGestureRecognizer:(UIGestureRecognizer *)other
+{
+    if (gestureRecognizer == self.moveRecognizer) {
+        return YES;
+    }
+    return NO;
+}
+
+- (void)moveLine:(UIPanGestureRecognizer *)gr
+{
+    // if we have not selected a line, we do not do anything here
+    if (!self.selectedLine) {
+        return;
+    }
+    
+    // When the pan recognizer changes its position...
+    if (gr.state == UIGestureRecognizerStateChanged) {
+        // How far has the pan moved?
+        CGPoint translation = [gr translationInView:self];
+        
+        // Add the translation to the current beginning and end points of the line
+        CGPoint begin = self.selectedLine.begin;
+        CGPoint end = self.selectedLine.end;
+        begin.x += translation.x;
+        begin.y += translation.y;
+        end.x += translation.x;
+        end.y += translation.y;
+        
+        // set the new beginning and end points of the line
+        self.selectedLine.begin = begin;
+        self.selectedLine.end = end;
+        
+        // Redraw the screen
+        [self setNeedsDisplay];
+        
+        [gr setTranslation:CGPointZero inView:self];
+    }
+}
+
 @end
