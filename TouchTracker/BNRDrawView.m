@@ -15,6 +15,8 @@
 @property (nonatomic, strong) NSMutableDictionary *linesInProgress;
 @property (nonatomic, strong) NSMutableArray *finishedLines;
 
+@property (nonatomic, weak) BNRLine *selectedLine;
+
 @end
 
 @implementation BNRDrawView
@@ -34,6 +36,12 @@
         doubleTapRecognizer.numberOfTapsRequired = 2;
         
         [self addGestureRecognizer:doubleTapRecognizer];
+        
+        UITapGestureRecognizer *tapRecognizer =
+          [[UITapGestureRecognizer alloc] initWithTarget:self action:@selector(tap:)];
+        tapRecognizer.delaysTouchesBegan = YES;
+        [tapRecognizer requireGestureRecognizerToFail:doubleTapRecognizer];
+        [self addGestureRecognizer:tapRecognizer];
     }
     
     return self;
@@ -68,6 +76,11 @@
     //    [[UIColor redColor] set];
     //    [self strokeLine:self.currentLine];
     //}
+    
+    if (self.selectedLine) {
+        [[UIColor greenColor] set];
+        [self strokeLine:self.selectedLine];
+    }
 }
 
 - (void)touchesBegan:(NSSet *)touches withEvent:(UIEvent *)event
@@ -164,4 +177,35 @@
     [self setNeedsDisplay];
 }
 
+- (void)tap:(UIGestureRecognizer *)gr
+{
+    NSLog(@"Recognized tap");
+    
+    CGPoint point = [gr locationInView:self];
+    self.selectedLine = [self lineAtPoint:point];
+    
+    [self setNeedsDisplay];
+}
+
+- (BNRLine *)lineAtPoint:(CGPoint)p
+{
+    //Find a line close to p
+    for (BNRLine *l in self.finishedLines) {
+        CGPoint start = l.begin;
+        CGPoint end = l.end;
+        
+        // Check a few points on the line
+        for (float t = 0.0; t <= 1.0; t += 0.05) {
+            float x = start.x + t * (end.x - start.x);
+            float y = start.y + t * (end.y - start.y);
+            
+            // if the tapped point is within 20 points, let's return this line
+            if (hypot(x - p.x, y - p.y) < 20.0) {
+                return l;
+            }
+        }
+    }
+    // if nothing is close enough to the tapped point, then we did not select a line
+    return nil;
+}
 @end
