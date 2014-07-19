@@ -28,6 +28,12 @@
         self.finishedLines = [[NSMutableArray alloc] init];
         self.backgroundColor = [UIColor grayColor];
         self.multipleTouchEnabled = YES;
+        
+        UITapGestureRecognizer *doubleTapRecognizer =
+          [[UITapGestureRecognizer alloc] initWithTarget:self action:@selector(doubleTap:)];
+        doubleTapRecognizer.numberOfTapsRequired = 2;
+        
+        [self addGestureRecognizer:doubleTapRecognizer];
     }
     
     return self;
@@ -123,6 +129,8 @@
         
         [self.finishedLines addObject:line];
         [self.linesInProgress removeObjectForKey:key];
+        
+        //line.containingArray = self.finishedLines;
     }
     
     //[self.finishedLines addObject:self.currentLine];
@@ -141,6 +149,17 @@
         NSValue *key = [NSValue valueWithNonretainedObject:t];
         [self.linesInProgress removeObjectForKey:key];
     }
+    
+    [self setNeedsDisplay];
+}
+
+- (void)doubleTap:(UIGestureRecognizer *)gr
+{
+    NSLog(@"Recognized Double Tap");
+    [self.linesInProgress removeAllObjects];
+    [self.finishedLines removeAllObjects];
+    
+    //self.finishedLines = [[NSMutableArray alloc] init];
     
     [self setNeedsDisplay];
 }
